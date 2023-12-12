@@ -100,6 +100,7 @@ def logout():
     del st.session_state.user
     st.cache_data.clear()
     st.cache_resource.clear()
+    st.session_state.clear()
 
 # Function for Vectorizing uploaded data into Astra DB
 def vectorize_text(uploaded_files):
