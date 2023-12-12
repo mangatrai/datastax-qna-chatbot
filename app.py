@@ -159,6 +159,7 @@ def load_rails(username):
     if df.empty:
         df = pd.read_csv("rails.csv")
         df = df.query(f"username == 'datastax'")
+    print("load_rails_username" + str(username))
     # Create and return a dictionary of key/values.
     rails_dict = {df.key.to_list()[i]:df.value.to_list()[i] for i in range(len(df.key.to_list()))}
     return rails_dict
