@@ -156,6 +156,9 @@ def load_rails(username):
     # Load in the rails bundle and filter by username
     df = pd.read_csv("rails.csv")
     df = df.query(f"username == '{username}'")
+    if df.empty:
+        df = pd.read_csv("rails.csv")
+        df = df.query(f"username == 'datastax'")
     # Create and return a dictionary of key/values.
     rails_dict = {df.key.to_list()[i]:df.value.to_list()[i] for i in range(len(df.key.to_list()))}
     return rails_dict
@@ -191,8 +194,8 @@ def load_vectorstore(username):
     return AstraDB(
         embedding=embedding,
         collection_name=f"vector_context_{username}",
-        token=st.secrets["ASTRA_VECTOR_TOKEN"],
-        api_endpoint=os.environ["ASTRA_VECTOR_ENDPOINT"],
+        token=st.secrets.astra_tokens[f"{username}"],
+        api_endpoint=st.secrets.astra_endpoints[f"{username}"],
     )
     
 # Cache Retriever for future runs
@@ -222,8 +225,8 @@ def load_chat_history(username):
     print("load_chat_history")
     return AstraDBChatMessageHistory(
         session_id=username,
-        api_endpoint=os.environ["ASTRA_VECTOR_ENDPOINT"],
-        token=st.secrets["ASTRA_VECTOR_TOKEN"],
+        api_endpoint=st.secrets.chat_history["ASTRA_VECTOR_ENDPOINT"],
+        token=st.secrets.chat_history["ASTRA_VECTOR_TOKEN"],
     )
 
 @st.cache_resource(show_spinner=lang_dict['load_message_history'])
@@ -367,11 +370,14 @@ if question := st.chat_input(lang_dict['assistant_question']):
         })
         print(f"Using inputs: {inputs}")
 
-        chain = inputs | prompt | model
+        chain = (inputs | prompt | model).with_config({"tags": [f"{st.session_state.user}"]})
         print(f"Using chain: {chain}")
 
         # Call the chain and stream the results into the UI
-        response = chain.invoke({'question': question, 'chat_history': history}, config={'callbacks': [StreamHandler(response_placeholder)]})
+        response = chain.invoke(
+            {"question": question, 'chat_history': history},
+            config={'callbacks': [StreamHandler(response_placeholder)]}
+        )
         print(f"Response: {response}")
         print(embedding.embed_query(question))
         content = response.content
