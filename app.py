@@ -224,7 +224,7 @@ def load_model():
 # Cache Chat History for future runs
 @st.cache_resource(show_spinner=lang_dict['load_message_history'])
 def load_chat_history(username):
-    print("load_chat_history")
+    print("load_chat_history" + str(username))
     return AstraDBChatMessageHistory(
         session_id=username,
         api_endpoint=st.secrets.chat_history["ASTRA_VECTOR_ENDPOINT"],
